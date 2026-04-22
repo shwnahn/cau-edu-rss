@@ -10,13 +10,13 @@ from feedgen.feed import FeedGenerator
 
 BASE = "https://education.cau.ac.kr"
 KST = timezone(timedelta(hours=9))
-OUT_DIR = Path("feeds")
 
 BOARDS = [
     {
         "id": "s0301",
         "name": "교육학과 공지",
         "desc": "education.cau.ac.kr s0301 게시판 미러",
+        "out": "feed.xml",
     },
 ]
 
@@ -36,7 +36,7 @@ def parse_date(text: str) -> datetime:
     return now
 
 
-def scrape_board(board_id: str, name: str, desc: str) -> int:
+def scrape_board(board_id: str, name: str, desc: str, out: str) -> int:
     url = f"{BASE}/bbs/board.php?bo_table={board_id}"
     res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
     res.raise_for_status()
@@ -83,16 +83,17 @@ def scrape_board(board_id: str, name: str, desc: str) -> int:
         fe.author({"name": author})
         fe.pubDate(pub)
 
-    OUT_DIR.mkdir(exist_ok=True)
-    out = OUT_DIR / f"{board_id}.xml"
-    fg.rss_file(str(out), pretty=True)
+    path = Path(out)
+    if str(path.parent) != ".":
+        path.parent.mkdir(parents=True, exist_ok=True)
+    fg.rss_file(str(path), pretty=True)
     return len(items)
 
 
 def main():
     for b in BOARDS:
-        n = scrape_board(b["id"], b["name"], b["desc"])
-        print(f"{b['id']}: {n} items -> feeds/{b['id']}.xml")
+        n = scrape_board(b["id"], b["name"], b["desc"], b["out"])
+        print(f"{b['id']}: {n} items -> {b['out']}")
 
 
 if __name__ == "__main__":
